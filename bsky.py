@@ -22,7 +22,8 @@ def create_post(text : str):
     post = {
         "$type": "app.bsky.feed.post",
         "text": text,
-        "createdAt": now
+        "createdAt": now,
+        "langs": {"en-US"}
         }
     return post
 
@@ -32,6 +33,7 @@ def create_reply(text : str, uri : str, cid: str, root_uri : str, root_cid : str
         "$type": "app.bsky.feed.post",
         "text": text,
         "createdAt": now,
+        "langs": {"en-US"},
         "reply": {
             "root": {
                 "uri": root_uri,
@@ -51,6 +53,7 @@ def create_self_reply(text : str, uri : str, cid : str):
         "$type": "app.bsky.feed.post",
         "text": text,
         "createdAt": now,
+        "langs": {"en-US"},
         "reply": {
             "root": {
                 "uri": uri,
