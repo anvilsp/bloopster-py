@@ -1,12 +1,14 @@
 import requests, json, bsky
+from os import environ as env
+from dotenv import load_dotenv
 # When run, this script will generate two posts: one containing a stagename and a self-reply to that post containing the context.
 
-# bsky auth session
-session = bsky.bsky_connect()
+# load environment variables
+load_dotenv()
 
 # request poopster
 def get_poopster(seed : str = "") -> str:
-    smb_response = requests.get('https://anvilsp.com/poopster/poops.php?parse=web')
+    smb_response = requests.get(env['PARSE_URL'], params={"parse": "web"})
     stage = smb_response.json()
     return stage
 
@@ -14,37 +16,21 @@ stage = get_poopster()
 
 # create post
 stage_string = stage['stagename']
-post = bsky.create_post(stage_string)
-
-resp = requests.post("https://bsky.social/xrpc/com.atproto.repo.createRecord",
-                     headers={"Authorization": "Bearer " + session["accessJwt"]},
-                   json = {
-                       "repo": session["did"],
-                       "collection": "app.bsky.feed.post",
-                       "record": post,
-                   })
+post = bsky.send_post(stage_string)
+print(post)
 
 
-print(json.dumps(resp.json(), indent=2))
-resp.raise_for_status()
-
-post_details = resp.json()
-
-
-context_string = "({first_stage} [{first_context}] and {second_stage} [{second_context}])".format(
+context_string = "({first_stage} [{first_context}] + {second_stage} [{second_context}])\nSeed: {seed}".format(
         first_stage = stage['first_stage'], first_context = stage['first_context'],
-        second_stage = stage['second_stage'], second_context = stage['second_context'] 
+        second_stage = stage['second_stage'], second_context = stage['second_context'],
+        seed = stage['seed'] 
         )
 
-reply = bsky.create_self_reply(context_string, post_details['uri'], post_details['cid'])
-resp = requests.post("https://bsky.social/xrpc/com.atproto.repo.createRecord",
-                     headers={"Authorization": "Bearer " + session["accessJwt"]},
-                   json = {
-                       "repo": session["did"],
-                       "collection": "app.bsky.feed.post",
-                       "record": reply,
-                   })
-
-
-print(json.dumps(resp.json(), indent=2))
-resp.raise_for_status()
+post_uri = post.uri
+post_cid = post.cid
+reply = bsky.send_reply(
+    context_string,
+    post_uri,
+    post_cid
+)
+print(reply)
